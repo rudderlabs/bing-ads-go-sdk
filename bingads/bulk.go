@@ -1,7 +1,14 @@
 package bingads
 
 import (
+	"bytes"
+	"encoding/json"
 	"encoding/xml"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 )
 
@@ -29,7 +36,20 @@ type GetBulkUploadUrlResponse struct {
 	RequestId string `xml:"RequestId"`
 }
 
-// GetBulkCampaignsByAccountId
+type GetBulkUploadStatusRequest struct {
+	XMLName   xml.Name `xml:"GetBulkUploadStatusRequest"`
+	NS        string   `xml:"xmlns,attr"`
+	RequestId string   `xml:"RequestId"`
+}
+
+type GetBulkUploadStatusResponse struct {
+	XMLName         xml.Name `xml:"GetBulkUploadStatusResponse"`
+	NS              string   `xml:"xmlns,attr"`
+	PercentComplete int64    `xml:"PercentComplete"`
+	RequestStatus   string   `xml:"RequestStatus"`
+}
+
+// GetBulkUploadUrl
 func (c *BulkService) GetBulkUploadUrl() (*GetBulkUploadUrlResponse, error) {
 	accountId, _ := strconv.ParseInt(c.Session.AccountId, 10, 64)
 	req := GetBulkUploadUrlRequest{
@@ -48,4 +68,83 @@ func (c *BulkService) GetBulkUploadUrl() (*GetBulkUploadUrlResponse, error) {
 		return nil, err
 	}
 	return &getBulkUploadUrlResponse, nil
+}
+
+// GetBulkUploadUrl
+func (c *BulkService) GetBulkUploadStatus(requestId string) (*GetBulkUploadStatusResponse, error) {
+	req := GetBulkUploadStatusRequest{
+		NS:        BingNamespace,
+		RequestId: requestId,
+	}
+
+	resp, err := c.Session.SendRequest(req, c.Endpoint, "GetBulkUploadStatus")
+	if err != nil {
+		return nil, err
+	}
+
+	var getBulkUploadStatusResponse GetBulkUploadStatusResponse
+	if err = xml.Unmarshal(resp, &getBulkUploadStatusResponse); err != nil {
+		return nil, err
+	}
+	return &getBulkUploadStatusResponse, nil
+}
+
+type UploadBulkFileResponse struct {
+	TrackingId string `json:"TrackingId"`
+	RequestId  string `json:"RequestId"`
+}
+
+func (c *BulkService) UploadBulkFile(url string, filename string) (*UploadBulkFileResponse, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	part1, err := writer.CreateFormFile("", filepath.Base(filename))
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(part1, file)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = writer.Close(); err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", url, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := c.Session.TokenSource.Token()
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("AuthenticationToken", token.AccessToken)
+	req.Header.Add("DeveloperToken", c.Session.DeveloperToken)
+	req.Header.Add("CustomerId", c.Session.CustomerId)
+	req.Header.Add("AccountId", c.Session.AccountId)
+
+	resp, err := c.Session.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var uploadBulkFileResponse UploadBulkFileResponse
+
+	if err = json.Unmarshal(body, &uploadBulkFileResponse); err != nil {
+		return nil, err
+	}
+
+	return &uploadBulkFileResponse, nil
 }

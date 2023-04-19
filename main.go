@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"os"
 	"strings"
@@ -45,7 +46,7 @@ func generate_access_token(config *oauth2.Config) (*oauth2.Token, error) {
 
 func get_session_config(config *oauth2.Config, token *oauth2.Token) bingads.SessionConfig {
 	return bingads.SessionConfig{
-		OAuth2Config:  config,
+		OAuth2Config:   config,
 		OAuth2Token:    token,
 		AccountId:      os.Getenv("CUSTOMER_ACCOUNT_ID"),
 		CustomerId:     os.Getenv("CUSTOMER_ID"),
@@ -78,9 +79,29 @@ func main() {
 	}
 	session := bingads.NewSession(get_session_config(oauth2Config, token))
 	service := bingads.NewBulkService(session)
-	resp, err := service.GetBulkUploadUrl()
+	urlResp, err := service.GetBulkUploadUrl()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%#v\n", resp)
+	fmt.Printf("urlResp %#v\n", urlResp)
+
+	uploadBulkFileResp, err := service.UploadBulkFile(urlResp.UploadUrl, "testfile.zip")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("uploadBulkFileResp %#v\n", uploadBulkFileResp)
+	var uploadStatus *bingads.GetBulkUploadStatusResponse
+	for {
+		time.Sleep(5 * time.Second)
+		uploadStatus, err = service.GetBulkUploadStatus(uploadBulkFileResp.RequestId)
+		if err != nil {
+			log.Fatal(err)
+			break
+		}
+		fmt.Printf("%#v", uploadStatus)
+		if uploadStatus.RequestStatus == "Completed" {
+			break
+		}
+	}
 }
