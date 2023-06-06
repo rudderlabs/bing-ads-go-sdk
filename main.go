@@ -45,6 +45,7 @@ func generate_access_token(config *oauth2.Config) (*oauth2.Token, error) {
 }
 
 func get_session_config(config *oauth2.Config, token *oauth2.Token) bingads.SessionConfig {
+	tokenSource := config.TokenSource(context.TODO(), token)
 	return bingads.SessionConfig{
 		OAuth2Config:   config,
 		OAuth2Token:    token,
@@ -52,6 +53,7 @@ func get_session_config(config *oauth2.Config, token *oauth2.Token) bingads.Sess
 		CustomerId:     os.Getenv("CUSTOMER_ID"),
 		DeveloperToken: os.Getenv("DEVELOPER_TOKEN"),
 		HTTPClient:     http.DefaultClient,
+		TokenSource:    tokenSource,
 	}
 }
 
