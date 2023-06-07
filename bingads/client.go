@@ -112,6 +112,8 @@ func (b *Session) sendRequest(body interface{}, endpoint, soapAction, ns string)
 }
 
 type SessionConfig struct {
+	OAuth2Config   *oauth2.Config
+	OAuth2Token    *oauth2.Token
 	AccountId      string
 	CustomerId     string
 	DeveloperToken string
