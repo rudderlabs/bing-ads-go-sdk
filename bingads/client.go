@@ -2,7 +2,6 @@ package bingads
 
 import (
 	"bytes"
-	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -119,16 +118,16 @@ type SessionConfig struct {
 	CustomerId     string
 	DeveloperToken string
 	HTTPClient     HttpClient
+	TokenSource    oauth2.TokenSource
 }
 
 func NewSession(config SessionConfig) *Session {
-	tokenSource := config.OAuth2Config.TokenSource(context.TODO(), config.OAuth2Token)
 
 	return &Session{
 		AccountId:      config.AccountId,
 		CustomerId:     config.CustomerId,
 		DeveloperToken: config.DeveloperToken,
 		HTTPClient:     config.HTTPClient,
-		TokenSource:    tokenSource,
+		TokenSource:    config.TokenSource,
 	}
 }
