@@ -96,7 +96,7 @@ type UploadBulkFileResponse struct {
 	RequestId  string `json:"RequestId"`
 }
 
-func (c *BulkService) UploadBulkFile(url string, filename string) (*UploadBulkFileResponse, error) {
+func (c *BulkService) UploadBulkFile(url, filename string) (*UploadBulkFileResponse, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
