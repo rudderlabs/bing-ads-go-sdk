@@ -30,8 +30,8 @@ func generate_refresh_token(config *oauth2.Config) (*oauth2.Token, error) {
 		return nil, err
 	}
 	body, _ := json.MarshalIndent(tokenResponse, "", " ")
-	os.WriteFile("token.json", body, 0o644)
-	return tokenResponse, nil
+	err = os.WriteFile("token.json", body, 0o644)
+	return tokenResponse, err
 }
 
 func generate_access_token(config *oauth2.Config) (*oauth2.Token, error) {

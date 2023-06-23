@@ -122,7 +122,6 @@ type SessionConfig struct {
 }
 
 func NewSession(config SessionConfig) *Session {
-
 	return &Session{
 		AccountId:      config.AccountId,
 		CustomerId:     config.CustomerId,
