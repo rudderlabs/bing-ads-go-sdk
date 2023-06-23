@@ -71,5 +71,5 @@ type HttpClient interface {
 type BulkServiceI interface {
 	GetBulkUploadUrl() (*GetBulkUploadUrlResponse, error)
 	GetBulkUploadStatus(requestId string) (*GetBulkUploadStatusResponse, error)
-	UploadBulkFile(url string, filename string) (*UploadBulkFileResponse, error)
+	UploadBulkFile(url, filename string) (*UploadBulkFileResponse, error)
 }
