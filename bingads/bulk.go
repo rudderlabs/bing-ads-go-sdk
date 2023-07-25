@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -68,6 +69,10 @@ func (c *BulkService) GetBulkUploadUrl() (*GetBulkUploadUrlResponse, error) {
 	var getBulkUploadUrlResponse GetBulkUploadUrlResponse
 	if err = xml.Unmarshal(resp, &getBulkUploadUrlResponse); err != nil {
 		return nil, err
+	}
+
+	if getBulkUploadUrlResponse.RequestId == "" || getBulkUploadUrlResponse.UploadUrl == "" {
+		return nil, fmt.Errorf("unable to get bulk upload url, check your credentials")
 	}
 	return &getBulkUploadUrlResponse, nil
 }
@@ -148,5 +153,8 @@ func (c *BulkService) UploadBulkFile(url, filename string) (*UploadBulkFileRespo
 		return nil, err
 	}
 
+	if uploadBulkFileResponse.RequestId == "" || uploadBulkFileResponse.TrackingId == "" {
+		return nil, fmt.Errorf("unable to upload bulk file, check your credentials")
+	}
 	return &uploadBulkFileResponse, nil
 }
