@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.1.0...v0.2.0) (2023-07-25)
+
+
+### Features
+
+* add error on empty uploadUrl and empty trackingId ([051ee7c](https://github.com/rudderlabs/bing-ads-go-sdk/commit/051ee7c1acbae8537c6a7032fa3fe38eb3d7887a))
+
 ## 0.1.0 (2023-06-23)
 
 
