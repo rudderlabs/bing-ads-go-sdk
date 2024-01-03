@@ -4,6 +4,10 @@ on:
     branches:
       - main
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
 jobs:
   unit:
     name: Unit
@@ -23,3 +27,4 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage.txt
