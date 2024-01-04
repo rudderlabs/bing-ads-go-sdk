@@ -1,0 +1,70 @@
+run:
+  timeout: 7m
+  go: '1.21'
+  skip-dirs:
+    - event-schema
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - unparam
+    - unconvert
+    - bodyclose
+    - decorder
+    - makezero
+    - nilnil
+    - nilerr
+    - rowserrcheck
+    - tenv
+    - wastedassign
+    - unparam
+    - misspell
+    - unconvert
+    - depguard
+    - unused
+
+issues:
+  exclude-use-default: true
+  exclude-case-sensitive: false
+  max-issues-per-linter: 50
+  max-same-issues: 10
+  new: false
+  exclude-rules:
+    # False positive httptest.NewRecorder
+    - path: 'gateway/webhook/webhook_test.go'
+      linters:
+        - bodyclose
+
+    # False positive .Close behind if
+    - path: 'processor/transformer/transformer.go'
+      linters:
+        - bodyclose
+
+    # False positive httptest.NewRecorder
+    - path: 'gateway/gateway_test.go'
+      linters:
+        - bodyclose
+
+    - path: 'cmd/rudder-cli/status/status.go'
+      linters:
+        - bodyclose
+
+linters-settings:
+  depguard:
+    rules:
+      main:
+        files:
+          - $all
+          - "!**/uuid_test.go"
+        deny:
+          - pkg: "github.com/gofrs/uuid"
+            desc: 'use github.com/google/uuid instead'
+          - pkg: "golang.org/x/exp/slices"
+            desc: 'use "slices" instead'
+
