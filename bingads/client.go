@@ -65,6 +65,7 @@ func (b *Session) sendRequest(body interface{}, endpoint, soapAction, ns string)
 	if err != nil {
 		return nil, err
 	}
+	defer response.Body.Close()
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
