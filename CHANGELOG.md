@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.2.0...v0.2.1) (2024-01-15)
+
+
+### Miscellaneous
+
+* add a small test to this repo ([#7](https://github.com/rudderlabs/bing-ads-go-sdk/issues/7)) ([02c05a9](https://github.com/rudderlabs/bing-ads-go-sdk/commit/02c05a924c2ac0268beae1b0dd39785b7834326f))
+
 ## [0.2.0](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.1.0...v0.2.0) (2023-07-25)
 
 
