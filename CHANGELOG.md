@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.2.1...v0.2.2) (2024-06-11)
+
+
+### Miscellaneous
+
+* **deps:** bump golang.org/x/net from 0.9.0 to 0.23.0 ([5311da4](https://github.com/rudderlabs/bing-ads-go-sdk/commit/5311da4a146fc11b30a3ca238d4c7af86fa40282))
+* **deps:** bump google.golang.org/protobuf from 1.28.0 to 1.33.0 ([ea3b035](https://github.com/rudderlabs/bing-ads-go-sdk/commit/ea3b035b59f5b714b61f950b20816ab33c864476))
+
 ## [0.2.1](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.2.0...v0.2.1) (2024-01-15)
 
 
