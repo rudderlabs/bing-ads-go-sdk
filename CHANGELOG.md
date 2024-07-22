@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.2.2...v0.2.3) (2024-07-22)
+
+
+### Miscellaneous
+
+* update mock dependency to uber mock from gomock ([#12](https://github.com/rudderlabs/bing-ads-go-sdk/issues/12)) ([04bc329](https://github.com/rudderlabs/bing-ads-go-sdk/commit/04bc32985389e7b4bc13005ba53cc19a539faff0))
+
 ## [0.2.2](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.2.1...v0.2.2) (2024-06-11)
 
 
