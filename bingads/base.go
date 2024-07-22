@@ -1,5 +1,7 @@
 package bingads
 
+//go:generate mockgen -destination=../mocks/bingads.go -package=mock_bulkservice github.com/rudderlabs/bing-ads-go-sdk/bingads BulkServiceI
+
 import (
 	"encoding/xml"
 	"net/http"
