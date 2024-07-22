@@ -4,7 +4,7 @@ go 1.20
 
 require golang.org/x/oauth2 v0.7.0
 
-require go.uber.org/mock v0.4.0 // indirect
+require go.uber.org/mock v0.4.0
 
 require (
 	github.com/golang/protobuf v1.5.2 // indirect
