@@ -14,11 +14,11 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
         with:
           egress-policy: audit
 
-      - uses: actions/stale@v5
+      - uses: actions/stale@f7176fd3007623b69d27091f9b9d4ab7995f0a06 # v5.2.1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           operations-per-run: 200
@@ -32,14 +32,14 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Harden the runner (Audit all outbound calls)
-          uses: step-security/harden-runner@v2
+          uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
           with:
             egress-policy: audit
 
         - name: Checkout repository
-          uses: actions/checkout@v2
+          uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
         - name: Run delete-old-branches-action
-          uses: beatlabs/delete-old-branches-action@v0.0.9
+          uses: beatlabs/delete-old-branches-action@db61ade054731e37b5740e23336445fbc75ccd7b # v0.0.9
           with:
             repo_token: ${{ github.token }}
             date: '6 months ago'
