@@ -5,7 +5,7 @@ MOUNT_PATH=/local
 
 # go tools versions
 GOLANGCI=github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.1
-gofumpt=mvdan.cc/gofumpt@latest
+gofumpt=mvdan.cc/gofumpt@v0.6.0
 goimports=golang.org/x/tools/cmd/goimports@latest
 mockgen=go.uber.org/mock/mockgen@v0.4.0
 gotestsum=gotest.tools/gotestsum@v1.11.0
@@ -32,7 +32,7 @@ coverage:
 	go tool cover -html=coverage.txt -o coverage.html
 
 install-tools:
-	go install mvdan.cc/gofumpt@latest
+	go install mvdan.cc/gofumpt@v0.6.0
 	go install gotest.tools/gotestsum@v1.8.2
 
 .PHONY: lint
