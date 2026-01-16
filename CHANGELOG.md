@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.4](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.2.3...v0.2.4) (2026-01-16)
+
+
+### Miscellaneous
+
+* apply security best practices from step security ([#14](https://github.com/rudderlabs/bing-ads-go-sdk/issues/14)) ([55d33ba](https://github.com/rudderlabs/bing-ads-go-sdk/commit/55d33ba75a598a8f694fae888196f5681bce2a23))
+* apply security best practices from step security ([#18](https://github.com/rudderlabs/bing-ads-go-sdk/issues/18)) ([975f0c8](https://github.com/rudderlabs/bing-ads-go-sdk/commit/975f0c8993aac3f564f846488b7bcb53b9e3f11a))
+* update release-please workflow to enhance security and change package name ([#19](https://github.com/rudderlabs/bing-ads-go-sdk/issues/19)) ([e9dfc73](https://github.com/rudderlabs/bing-ads-go-sdk/commit/e9dfc73e60161d3c703bfdf0e4409bb610a966b2))
+
 ## [0.2.3](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.2.2...v0.2.3) (2024-07-22)
 
 
