@@ -1,14 +1,19 @@
 name: 'Pull Request Description'
 on:
   pull_request:
-    types: 
+    types:
       - opened
       - edited
       - reopened
 
+permissions:
+  contents: read
+
 jobs:
   enforce:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
