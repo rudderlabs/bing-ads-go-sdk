@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.4](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.2.3...v0.2.4) (2026-04-27)
+
+
+### Bug Fixes
+
+* **vuln:** pin and bump action refs (SEC-171) ([#22](https://github.com/rudderlabs/bing-ads-go-sdk/issues/22)) ([495b75e](https://github.com/rudderlabs/bing-ads-go-sdk/commit/495b75ec15b12d52d9f4442323c71989d248b5ef))
+
+
+### Miscellaneous
+
+* apply security best practices from step security ([#14](https://github.com/rudderlabs/bing-ads-go-sdk/issues/14)) ([55d33ba](https://github.com/rudderlabs/bing-ads-go-sdk/commit/55d33ba75a598a8f694fae888196f5681bce2a23))
+* apply security best practices from step security ([#18](https://github.com/rudderlabs/bing-ads-go-sdk/issues/18)) ([975f0c8](https://github.com/rudderlabs/bing-ads-go-sdk/commit/975f0c8993aac3f564f846488b7bcb53b9e3f11a))
+* update release-please workflow to enhance security and change package name ([#19](https://github.com/rudderlabs/bing-ads-go-sdk/issues/19)) ([e9dfc73](https://github.com/rudderlabs/bing-ads-go-sdk/commit/e9dfc73e60161d3c703bfdf0e4409bb610a966b2))
+* **vuln:** scope workflow permissions to least privilege (SEC-167) ([#25](https://github.com/rudderlabs/bing-ads-go-sdk/issues/25)) ([b45208e](https://github.com/rudderlabs/bing-ads-go-sdk/commit/b45208e716cbd3c342fbd48dd3b9660d96dc2ed4))
+* **vuln:** zizmor --fix=all findings (SEC-199) ([#24](https://github.com/rudderlabs/bing-ads-go-sdk/issues/24)) ([3b1c628](https://github.com/rudderlabs/bing-ads-go-sdk/commit/3b1c62867170dc8a2aab8008e1592d78c3ab0635))
+
 ## [0.2.3](https://github.com/rudderlabs/bing-ads-go-sdk/compare/v0.2.2...v0.2.3) (2024-07-22)
 
 
