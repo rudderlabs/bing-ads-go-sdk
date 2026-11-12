@@ -177,7 +177,7 @@ func hasFaultFields(fields map[string]json.RawMessage) bool {
 func adAPIErrorList(errors []restError) []AdApiError {
 	var result []AdApiError
 	for _, e := range errors {
-		result = append(result, AdApiError{Code: e.Code, Details: e.Details, ErrorCode: e.ErrorCode, Message: e.Message})
+		result = append(result, AdApiError(e))
 	}
 	return result
 }
@@ -185,7 +185,7 @@ func adAPIErrorList(errors []restError) []AdApiError {
 func operationErrors(errors []restError) []OperationError {
 	var result []OperationError
 	for _, e := range errors {
-		result = append(result, OperationError{Code: e.Code, Details: e.Details, ErrorCode: e.ErrorCode, Message: e.Message})
+		result = append(result, OperationError(e))
 	}
 	return result
 }

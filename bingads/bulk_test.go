@@ -86,7 +86,9 @@ func TestBulkSOAPGolden(t *testing.T) {
 				if string(body) != tc.wantBody {
 					t.Errorf("SOAP envelope mismatch:\n got: %q\nwant: %q", body, tc.wantBody)
 				}
-				w.Write([]byte(`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body>` + tc.response + `</s:Body></s:Envelope>`))
+				if _, err := w.Write([]byte(`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body>` + tc.response + `</s:Body></s:Envelope>`)); err != nil {
+					t.Error(err)
+				}
 			}))
 			defer server.Close()
 			b := NewBulkService(&Session{AccountId: "123", CustomerId: "customer", DeveloperToken: "developer", TokenSource: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "secret-token"}), HTTPClient: server.Client()})
@@ -101,7 +103,9 @@ func TestBulkSOAPGolden(t *testing.T) {
 func TestBulkSOAPFault(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><Fault><detail><AdApiFaultDetail><Errors><AdApiError><ErrorCode>AuthenticationTokenExpired</ErrorCode><Message>expired</Message></AdApiError></Errors></AdApiFaultDetail></detail></Fault></s:Body></s:Envelope>`))
+		if _, err := w.Write([]byte(`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><Fault><detail><AdApiFaultDetail><Errors><AdApiError><ErrorCode>AuthenticationTokenExpired</ErrorCode><Message>expired</Message></AdApiError></Errors></AdApiFaultDetail></detail></Fault></s:Body></s:Envelope>`)); err != nil {
+			t.Error(err)
+		}
 	}))
 	defer server.Close()
 	b := NewBulkService(&Session{AccountId: "123", TokenSource: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "secret-token"}), HTTPClient: server.Client()})
