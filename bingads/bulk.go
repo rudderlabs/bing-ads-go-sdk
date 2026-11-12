@@ -13,16 +13,56 @@ import (
 	"strconv"
 )
 
-type BulkService struct {
-	Endpoint string
-	Session  *Session
+type Protocol string
+
+const (
+	// Deprecated: Microsoft removes SOAP on 2027-01-31.
+	ProtocolSOAP Protocol = "soap"
+	ProtocolREST Protocol = "rest"
+)
+
+const defaultRESTBaseURL = "https://bulk.api.bingads.microsoft.com"
+
+type bulkTransport interface {
+	getBulkUploadURL(accountID int64, responseMode string) (*GetBulkUploadUrlResponse, error)
+	getBulkUploadStatus(requestID string) (*GetBulkUploadStatusResponse, error)
 }
 
-func NewBulkService(session *Session) *BulkService {
-	return &BulkService{
-		Endpoint: "https://bulk.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v13/BulkService.svc",
-		Session:  session,
+type BulkService struct {
+	Endpoint    string
+	Session     *Session
+	protocol    Protocol
+	restBaseURL string
+}
+
+type BulkServiceOption func(*BulkService)
+
+func WithProtocol(p Protocol) BulkServiceOption {
+	return func(b *BulkService) { b.protocol = p }
+}
+
+func WithRESTBaseURL(u string) BulkServiceOption {
+	return func(b *BulkService) { b.restBaseURL = u }
+}
+
+func NewBulkService(session *Session, opts ...BulkServiceOption) *BulkService {
+	b := &BulkService{
+		Endpoint:    "https://bulk.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v13/BulkService.svc",
+		Session:     session,
+		protocol:    ProtocolSOAP,
+		restBaseURL: defaultRESTBaseURL,
 	}
+	for _, opt := range opts {
+		opt(b)
+	}
+	return b
+}
+
+func (c *BulkService) transport() bulkTransport {
+	if c.protocol == ProtocolREST {
+		return &restBulkTransport{session: c.Session, baseURL: c.restBaseURL}
+	}
+	return &soapBulkTransport{session: c.Session, endpoint: c.Endpoint}
 }
 
 type GetBulkUploadUrlRequest struct {
@@ -52,48 +92,22 @@ type GetBulkUploadStatusResponse struct {
 	Errors          ErrorsType `xml:"ErrorsType"`
 }
 
-// GetBulkUploadUrl
+// GetBulkUploadUrl gets the URL and request ID for a bulk upload.
 func (c *BulkService) GetBulkUploadUrl() (*GetBulkUploadUrlResponse, error) {
-	accountId, _ := strconv.ParseInt(c.Session.AccountId, 10, 64)
-	req := GetBulkUploadUrlRequest{
-		NS:           BingNamespace,
-		AccountId:    accountId,
-		ResponseMode: "ErrorsOnly",
-	}
-
-	resp, err := c.Session.SendRequest(req, c.Endpoint, "GetBulkUploadUrl")
+	accountID, _ := strconv.ParseInt(c.Session.AccountId, 10, 64)
+	response, err := c.transport().getBulkUploadURL(accountID, "ErrorsOnly")
 	if err != nil {
 		return nil, err
 	}
-
-	var getBulkUploadUrlResponse GetBulkUploadUrlResponse
-	if err = xml.Unmarshal(resp, &getBulkUploadUrlResponse); err != nil {
-		return nil, err
-	}
-
-	if getBulkUploadUrlResponse.RequestId == "" || getBulkUploadUrlResponse.UploadUrl == "" {
+	if response.RequestId == "" || response.UploadUrl == "" {
 		return nil, fmt.Errorf("unable to get bulk upload url, check your credentials")
 	}
-	return &getBulkUploadUrlResponse, nil
+	return response, nil
 }
 
-// GetBulkUploadUrl
+// GetBulkUploadStatus gets the current status of a bulk upload.
 func (c *BulkService) GetBulkUploadStatus(requestId string) (*GetBulkUploadStatusResponse, error) {
-	req := GetBulkUploadStatusRequest{
-		NS:        BingNamespace,
-		RequestId: requestId,
-	}
-
-	resp, err := c.Session.SendRequest(req, c.Endpoint, "GetBulkUploadStatus")
-	if err != nil {
-		return nil, err
-	}
-
-	var getBulkUploadStatusResponse GetBulkUploadStatusResponse
-	if err = xml.Unmarshal(resp, &getBulkUploadStatusResponse); err != nil {
-		return nil, err
-	}
-	return &getBulkUploadStatusResponse, nil
+	return c.transport().getBulkUploadStatus(requestId)
 }
 
 type UploadBulkFileResponse struct {

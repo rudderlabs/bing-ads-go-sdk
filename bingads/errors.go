@@ -2,8 +2,35 @@ package bingads
 
 import (
 	"encoding/xml"
+	"fmt"
 	"strings"
 )
+
+// APIError describes a failed REST bulk API request.
+type APIError struct {
+	Operation  string
+	StatusCode int
+	TrackingID string
+	Errors     ErrorsType
+	Body       string
+}
+
+func (e *APIError) Error() string {
+	message := e.Errors.Error()
+	if strings.TrimSpace(message) == "" {
+		message = e.Body
+		if len(message) > 2048 {
+			message = message[:2048]
+		}
+		if message == "" {
+			message = "empty response body"
+		}
+	}
+	if e.TrackingID != "" {
+		return fmt.Sprintf("%s: HTTP %d (tracking ID %s): %s", e.Operation, e.StatusCode, e.TrackingID, message)
+	}
+	return fmt.Sprintf("%s: HTTP %d: %s", e.Operation, e.StatusCode, message)
+}
 
 type baseError struct {
 	code    string
