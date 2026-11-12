@@ -73,16 +73,8 @@ func (b *Session) sendRequest(body interface{}, endpoint, soapAction, ns string)
 	}
 
 	if debug != "" {
-		logEnvelope := envelope
-		logEnvelope.Header.AuthenticationToken = ""
-		logEnvelope.Header.Password = ""
-		logEnvelope.Header.DeveloperToken = ""
-		redacted, marshalErr := xml.MarshalIndent(logEnvelope, "", "  ")
-		if marshalErr == nil {
-			fmt.Println(string(redacted))
-		}
+		fmt.Printf("bingads debug request: action=%s\n", soapAction)
 	}
-	// fmt.Println(string(raw))
 
 	res := SoapResponseEnvelope{}
 

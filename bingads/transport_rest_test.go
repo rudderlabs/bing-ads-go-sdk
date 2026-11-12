@@ -206,7 +206,7 @@ func TestBulkSOAPDebugHidesToken(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	if strings.Contains(output, "secret-token") || strings.Contains(output, "developer-secret") || !strings.Contains(output, "GetBulkUploadUrlRequest") {
+	if strings.Contains(output, "secret-token") || strings.Contains(output, "developer-secret") || strings.Contains(output, "<s:Envelope") || !strings.Contains(output, "bingads debug request: action=GetBulkUploadUrl") {
 		t.Fatalf("unsafe or missing debug output: %s", output)
 	}
 }
@@ -233,7 +233,7 @@ func TestBulkSOAPDebugHidesPassword(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	if strings.Contains(output, "password-secret") || strings.Contains(output, "developer-secret") || !strings.Contains(output, "GetBulkUploadUrlRequest") {
+	if strings.Contains(output, "password-secret") || strings.Contains(output, "developer-secret") || strings.Contains(output, "<s:Envelope") || !strings.Contains(output, "bingads debug request: action=GetBulkUploadUrl") {
 		t.Fatalf("unsafe or missing debug output: %s", output)
 	}
 }
