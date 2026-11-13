@@ -4,7 +4,7 @@ TESTFILE=_testok
 MOUNT_PATH=/local
 
 # go tools versions
-GOLANGCI=github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.1
+GOLANGCI=github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 gofumpt=mvdan.cc/gofumpt@v0.6.0
 goimports=golang.org/x/tools/cmd/goimports@latest
 mockgen=go.uber.org/mock/mockgen@v0.4.0
@@ -37,8 +37,7 @@ install-tools:
 
 .PHONY: lint
 lint: fmt ## Run linters on all go files
-	docker run --rm -v $(shell pwd):/app:ro -w /app golangci/golangci-lint:v1.51.1 bash -e -c \
-		'golangci-lint run -v --timeout 5m'
+	$(GO) run $(GOLANGCI) run -v
 
 .PHONY: fmt
 fmt: install-tools ## Formats all go files
