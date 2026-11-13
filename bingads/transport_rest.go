@@ -14,81 +14,83 @@ type restBulkTransport struct {
 	baseURL string
 }
 
-type restError struct {
+type restGetBulkUploadURLRequest struct {
+	AccountID    int64  `json:"AccountId"`
+	ResponseMode string `json:"ResponseMode"`
+}
+
+type restGetBulkUploadURLResponse struct {
+	RequestID string `json:"RequestId"`
+	UploadURL string `json:"UploadUrl"`
+}
+
+type restGetBulkUploadStatusRequest struct {
+	RequestID string `json:"RequestId"`
+}
+
+type restGetBulkUploadStatusResponse struct {
+	Errors          []OperationError `json:"Errors"`
+	PercentComplete int64            `json:"PercentComplete"`
+	RequestStatus   string           `json:"RequestStatus"`
+	ResultFileURL   string           `json:"ResultFileUrl"`
+}
+
+// restAdAPIError is AdApiError in JSON, where the detail field is named Detail.
+type restAdAPIError struct {
 	Code      int64  `json:"Code"`
-	Details   string `json:"Details"`
+	Detail    string `json:"Detail"`
 	ErrorCode string `json:"ErrorCode"`
 	Message   string `json:"Message"`
 }
 
+// restFault covers AdApiFaultDetail and ApiFaultDetail, told apart by Type.
 type restFault struct {
-	Type            string      `json:"Type"`
-	TrackingID      string      `json:"TrackingId"`
-	Errors          []restError `json:"Errors"`
-	OperationErrors []restError `json:"OperationErrors"`
-	BatchErrors     []restError `json:"BatchErrors"`
+	Type            string           `json:"Type"`
+	TrackingID      string           `json:"TrackingId"`
+	Errors          []restAdAPIError `json:"Errors"`
+	OperationErrors []OperationError `json:"OperationErrors"`
+	BatchErrors     []OperationError `json:"BatchErrors"`
 }
 
 func (t *restBulkTransport) getBulkUploadURL(accountID int64, responseMode string) (*GetBulkUploadUrlResponse, error) {
-	body, _, err := t.query("GetBulkUploadUrl", "/Bulk/v13/BulkUploadUrl/Query", struct {
-		AccountID    int64  `json:"AccountId"`
-		ResponseMode string `json:"ResponseMode"`
-	}{accountID, responseMode})
-	if err != nil {
-		return nil, err
-	}
-	var result struct {
-		UploadURL string `json:"UploadUrl"`
-		RequestID string `json:"RequestId"`
-	}
-	if err := json.Unmarshal(body, &result); err != nil {
+	var result restGetBulkUploadURLResponse
+	if err := t.postJSON("GetBulkUploadUrl", "/Bulk/v13/BulkUploadUrl/Query",
+		restGetBulkUploadURLRequest{AccountID: accountID, ResponseMode: responseMode}, &result); err != nil {
 		return nil, err
 	}
 	return &GetBulkUploadUrlResponse{UploadUrl: result.UploadURL, RequestId: result.RequestID}, nil
 }
 
 func (t *restBulkTransport) getBulkUploadStatus(requestID string) (*GetBulkUploadStatusResponse, error) {
-	body, trackingID, err := t.query("GetBulkUploadStatus", "/Bulk/v13/BulkUploadStatus/Query", struct {
-		RequestID string `json:"RequestId"`
-	}{requestID})
-	if err != nil {
-		return nil, err
-	}
-	var result struct {
-		RequestStatus   string      `json:"RequestStatus"`
-		PercentComplete int64       `json:"PercentComplete"`
-		ResultFileURL   string      `json:"ResultFileUrl"`
-		Errors          []restError `json:"Errors"`
-	}
-	if err := json.Unmarshal(body, &result); err != nil {
+	var result restGetBulkUploadStatusResponse
+	if err := t.postJSON("GetBulkUploadStatus", "/Bulk/v13/BulkUploadStatus/Query",
+		restGetBulkUploadStatusRequest{RequestID: requestID}, &result); err != nil {
 		return nil, err
 	}
 	return &GetBulkUploadStatusResponse{
-		RequestStatus:   result.RequestStatus,
-		PercentComplete: result.PercentComplete,
-		ResultFileUrl:   result.ResultFileURL,
-		Errors: ErrorsType{
-			TrackingId:      trackingID,
-			OperationErrors: operationErrors(result.Errors),
-		},
+		RequestStatus:    result.RequestStatus,
+		PercentComplete:  result.PercentComplete,
+		ResultFileUrl:    result.ResultFileURL,
+		ProcessingErrors: result.Errors,
 	}, nil
 }
 
-func (t *restBulkTransport) query(operation, path string, payload interface{}) ([]byte, string, error) {
+// postJSON sends payload to path and decodes a 2xx body into out. Other statuses return a fault error.
+func (t *restBulkTransport) postJSON(operation, path string, payload, out interface{}) error {
 	if t.session.TokenSource == nil {
-		return nil, "", fmt.Errorf("%s: REST requires a token source", operation)
+		return fmt.Errorf("%s: REST requires a token source", operation)
 	}
 	token, err := t.session.TokenSource.Token()
 	if err != nil {
-		return nil, "", err
+		return err
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, "", err
+		return err
 	}
 	req, err := http.NewRequest(http.MethodPost, strings.TrimRight(t.baseURL, "/")+path, bytes.NewReader(body))
 	if err != nil {
-		return nil, "", err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
@@ -98,94 +100,57 @@ func (t *restBulkTransport) query(operation, path string, payload interface{}) (
 
 	resp, err := t.session.HTTPClient.Do(req)
 	if err != nil {
-		return nil, "", err
+		return err
 	}
 	defer resp.Body.Close()
+	trackingID := resp.Header.Get("TrackingId")
+	// Bodies carry signed upload and result URLs, so debug output omits them.
+	if debug != "" {
+		fmt.Printf("POST %s: HTTP %d (tracking ID %s)\n", req.URL.Path, resp.StatusCode, trackingID)
+	}
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, "", err
-	}
-	trackingID := resp.Header.Get("TrackingId")
-	if debug != "" {
-		logBody, logTrackingID := string(raw), trackingID
-		if token.AccessToken != "" {
-			logBody = strings.ReplaceAll(logBody, token.AccessToken, "[REDACTED]")
-			logTrackingID = strings.ReplaceAll(logTrackingID, token.AccessToken, "[REDACTED]")
-		}
-		fmt.Printf("POST %s: HTTP %d (tracking ID %s): %s\n", req.URL.Path, resp.StatusCode, logTrackingID, logBody)
+		return fmt.Errorf("%s: HTTP %d: read response body: %w", operation, resp.StatusCode, err)
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		apiErr := &APIError{Operation: operation, StatusCode: resp.StatusCode, TrackingID: trackingID, Body: string(raw)}
-		fault := parseRESTFault(raw)
-		if fault.TrackingID != "" {
-			apiErr.TrackingID = fault.TrackingID
-		}
-		apiErr.Errors = ErrorsType{
-			TrackingId:      apiErr.TrackingID,
-			AdApiErrors:     adAPIErrorList(fault.Errors),
-			OperationErrors: operationErrors(append(fault.OperationErrors, fault.BatchErrors...)),
-		}
-		for _, e := range append(append(fault.Errors, fault.OperationErrors...), fault.BatchErrors...) {
-			switch e.ErrorCode {
-			case "AuthenticationTokenExpired", "InvalidCredentials", "InternalError", "CallRateExceeded":
-				return nil, "", &baseError{code: e.ErrorCode, origErr: apiErr}
-			}
-		}
-		return nil, "", apiErr
+		return faultError(operation, resp.StatusCode, trackingID, raw)
 	}
-	return raw, trackingID, nil
+	if err := json.Unmarshal(raw, out); err != nil {
+		return fmt.Errorf("%s: decode response: %w", operation, err)
+	}
+	return nil
 }
 
-func parseRESTFault(body []byte) restFault {
-	var fields map[string]json.RawMessage
-	if json.Unmarshal(body, &fields) != nil {
-		return restFault{}
-	}
+// faultError builds an APIError from a documented fault body, wrapping known codes in baseError.
+func faultError(operation string, status int, trackingID string, raw []byte) error {
+	apiErr := &APIError{Operation: operation, StatusCode: status, TrackingID: trackingID, Body: string(raw)}
+	apiErr.Errors.TrackingId = trackingID
 	var fault restFault
-	_ = json.Unmarshal(body, &fault)
-	for _, value := range fields {
-		var nested map[string]json.RawMessage
-		if json.Unmarshal(value, &nested) != nil || !hasFaultFields(nested) {
-			continue
-		}
-		var inner restFault
-		if json.Unmarshal(value, &inner) != nil {
-			continue
-		}
-		if fault.Type == "" {
-			fault.Type = inner.Type
-		}
-		if fault.TrackingID == "" {
-			fault.TrackingID = inner.TrackingID
-		}
-		fault.Errors = append(fault.Errors, inner.Errors...)
-		fault.OperationErrors = append(fault.OperationErrors, inner.OperationErrors...)
-		fault.BatchErrors = append(fault.BatchErrors, inner.BatchErrors...)
+	if json.Unmarshal(raw, &fault) != nil {
+		return apiErr
 	}
-	return fault
-}
-
-func hasFaultFields(fields map[string]json.RawMessage) bool {
-	for _, key := range []string{"Type", "TrackingId", "Errors", "OperationErrors", "BatchErrors"} {
-		if _, ok := fields[key]; ok {
-			return true
+	if fault.TrackingID != "" {
+		apiErr.TrackingID = fault.TrackingID
+		apiErr.Errors.TrackingId = fault.TrackingID
+	}
+	var codes []string
+	switch fault.Type {
+	case "AdApiFaultDetail":
+		for _, e := range fault.Errors {
+			apiErr.Errors.AdApiErrors = append(apiErr.Errors.AdApiErrors, AdApiError{Code: e.Code, Details: e.Detail, ErrorCode: e.ErrorCode, Message: e.Message})
+			codes = append(codes, e.ErrorCode)
+		}
+	case "ApiFaultDetail":
+		apiErr.Errors.OperationErrors = append(fault.OperationErrors, fault.BatchErrors...)
+		for _, e := range apiErr.Errors.OperationErrors {
+			codes = append(codes, e.ErrorCode)
 		}
 	}
-	return false
-}
-
-func adAPIErrorList(errors []restError) []AdApiError {
-	var result []AdApiError
-	for _, e := range errors {
-		result = append(result, AdApiError(e))
+	for _, code := range codes {
+		switch code {
+		case "AuthenticationTokenExpired", "InvalidCredentials", "InternalError", "CallRateExceeded":
+			return &baseError{code: code, origErr: apiErr}
+		}
 	}
-	return result
-}
-
-func operationErrors(errors []restError) []OperationError {
-	var result []OperationError
-	for _, e := range errors {
-		result = append(result, OperationError(e))
-	}
-	return result
+	return apiErr
 }

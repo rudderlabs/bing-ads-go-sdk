@@ -90,6 +90,8 @@ type GetBulkUploadStatusResponse struct {
 	RequestStatus   string     `xml:"RequestStatus"`
 	ResultFileUrl   string     `xml:"ResultFileUrl"`
 	Errors          ErrorsType `xml:"ErrorsType"`
+	// ProcessingErrors holds the REST response's Errors: problems found while processing the uploaded file.
+	ProcessingErrors []OperationError `xml:"-"`
 }
 
 // GetBulkUploadUrl gets the URL and request ID for a bulk upload.

@@ -42,7 +42,7 @@ func TestBulkRESTQueries(t *testing.T) {
 			response: `{"RequestStatus":"Completed","PercentComplete":95,"ResultFileUrl":"https://result.example","Errors":[{"Code":11,"ErrorCode":"SomeError","Message":"details","Details":"detail"}]}`,
 			call: func(b *BulkService) error {
 				result, err := b.GetBulkUploadStatus("id")
-				if err == nil && (result.RequestStatus != "Completed" || result.PercentComplete != 95 || result.ResultFileUrl != "https://result.example" || result.Errors.TrackingId != "tracking-header" || len(result.Errors.OperationErrors) != 1 || result.Errors.OperationErrors[0].Code != 11 || result.Errors.OperationErrors[0].Message != "details" || result.Errors.OperationErrors[0].Details != "detail") {
+				if err == nil && (result.RequestStatus != "Completed" || result.PercentComplete != 95 || result.ResultFileUrl != "https://result.example" || len(result.ProcessingErrors) != 1 || result.ProcessingErrors[0] != (OperationError{Code: 11, Details: "detail", ErrorCode: "SomeError", Message: "details"})) {
 					t.Errorf("unexpected status response: %+v", result)
 				}
 				return err
@@ -93,19 +93,19 @@ func TestBulkRESTEmptyUploadURL(t *testing.T) {
 
 func TestBulkRESTFaults(t *testing.T) {
 	for _, tc := range []struct {
-		name, body, code, message string
-		status                    int
+		name, body, code, message, tracking  string
+		status, adAPIErrors, operationErrors int
 	}{
-		{"top-level", `{"Type":"AdApiError","TrackingId":"json-id","Errors":[{"Code":42,"ErrorCode":"Other","Message":"top failure"}]}`, "", "top failure", 400},
-		{"wrapped", `{"Error":{"Type":"ApiFault","OperationErrors":[{"ErrorCode":"Other","Message":"nested failure"}],"BatchErrors":[{"ErrorCode":"Other","Message":"batch failure"}]}}`, "", "nested failure\nbatch failure", 400},
-		{"mixed-level", `{"TrackingId":"outer-id","Type":"ApiFault","Error":{"OperationErrors":[{"ErrorCode":"AuthenticationTokenExpired","Message":"expired"}]}}`, "AuthenticationTokenExpired", "expired", 401},
-		{"missing-messages", `{"OperationErrors":[{"ErrorCode":"Other","Details":"first detail"},{"ErrorCode":"Other","Details":"second detail"}]}`, "", `"second detail"`, 400},
-		{"expired", `{"Errors":[{"ErrorCode":"AuthenticationTokenExpired","Message":"expired"}]}`, "AuthenticationTokenExpired", "expired", 401},
-		{"credentials", `{"OperationErrors":[{"ErrorCode":"InvalidCredentials","Message":"credentials"}]}`, "InvalidCredentials", "credentials", 403},
-		{"internal", `{"Error":{"BatchErrors":[{"ErrorCode":"InternalError","Message":"internal"}]}}`, "InternalError", "internal", 500},
-		{"rate", `{"Errors":[{"ErrorCode":"CallRateExceeded","Message":"rate"}]}`, "CallRateExceeded", "rate", 429},
-		{"html", `<html>unavailable</html>`, "", "<html>unavailable</html>", 503},
-		{"empty", "", "", "empty response body", 503},
+		{"ad-api-fault", `{"TrackingId":"json-id","Type":"AdApiFaultDetail","Errors":[{"Code":42,"Detail":"why","ErrorCode":"Other","Message":"top failure"}]}`, "", "top failure", "json-id", 400, 1, 0},
+		{"api-fault", `{"TrackingId":"json-id","Type":"ApiFaultDetail","OperationErrors":[{"Code":1,"ErrorCode":"Other","Message":"op failure"}],"BatchErrors":[{"Code":2,"ErrorCode":"Other","Index":0,"Message":"batch failure"}]}`, "", "op failure\nbatch failure", "json-id", 400, 0, 2},
+		{"missing-messages", `{"Type":"ApiFaultDetail","OperationErrors":[{"ErrorCode":"Other","Details":"first detail"},{"ErrorCode":"Other","Details":"second detail"}]}`, "", `"second detail"`, "header-id", 400, 0, 2},
+		{"expired", `{"Type":"AdApiFaultDetail","Errors":[{"ErrorCode":"AuthenticationTokenExpired","Message":"expired"}]}`, "AuthenticationTokenExpired", "expired", "header-id", 401, 1, 0},
+		{"credentials", `{"Type":"ApiFaultDetail","OperationErrors":[{"ErrorCode":"InvalidCredentials","Message":"credentials"}]}`, "InvalidCredentials", "credentials", "header-id", 403, 0, 1},
+		{"internal", `{"Type":"ApiFaultDetail","BatchErrors":[{"ErrorCode":"InternalError","Message":"internal"}]}`, "InternalError", "internal", "header-id", 500, 0, 1},
+		{"rate", `{"Type":"AdApiFaultDetail","Errors":[{"ErrorCode":"CallRateExceeded","Message":"rate"}]}`, "CallRateExceeded", "rate", "header-id", 429, 1, 0},
+		{"untyped", `{"Errors":[{"ErrorCode":"CallRateExceeded","Message":"rate"}]}`, "", `"CallRateExceeded"`, "header-id", 429, 0, 0},
+		{"html", `<html>unavailable</html>`, "", "<html>unavailable</html>", "header-id", 503, 0, 0},
+		{"empty", "", "", "empty response body", "header-id", 503, 0, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -126,24 +126,14 @@ func TestBulkRESTFaults(t *testing.T) {
 			if !ok || apiErr.StatusCode != tc.status || apiErr.Operation != "GetBulkUploadStatus" || apiErr.Body != tc.body || !strings.Contains(apiErr.Error(), tc.message) {
 				t.Fatalf("unexpected APIError: %T: %v", err, err)
 			}
-			wantTracking := "header-id"
-			if tc.name == "top-level" {
-				wantTracking = "json-id"
-				if len(apiErr.Errors.AdApiErrors) != 1 || apiErr.Errors.AdApiErrors[0].Code != 42 {
-					t.Errorf("fault errors: %+v", apiErr.Errors)
-				}
-			}
-			if tc.name == "mixed-level" {
-				wantTracking = "outer-id"
-				if len(apiErr.Errors.OperationErrors) != 1 || apiErr.Errors.OperationErrors[0].ErrorCode != tc.code {
-					t.Errorf("wrapped operation errors: %+v", apiErr.Errors)
-				}
-			}
-			if apiErr.TrackingID != wantTracking || apiErr.Errors.TrackingId != wantTracking || !strings.Contains(apiErr.Error(), "tracking ID "+wantTracking) {
+			if apiErr.TrackingID != tc.tracking || apiErr.Errors.TrackingId != tc.tracking || !strings.Contains(apiErr.Error(), "tracking ID "+tc.tracking) {
 				t.Errorf("tracking ID: %+v", apiErr)
 			}
-			if tc.name == "wrapped" && len(apiErr.Errors.OperationErrors) != 2 {
-				t.Errorf("wrapped errors: %+v", apiErr.Errors)
+			if len(apiErr.Errors.AdApiErrors) != tc.adAPIErrors || len(apiErr.Errors.OperationErrors) != tc.operationErrors {
+				t.Errorf("fault errors: %+v", apiErr.Errors)
+			}
+			if tc.name == "ad-api-fault" && (apiErr.Errors.AdApiErrors[0].Code != 42 || apiErr.Errors.AdApiErrors[0].Details != "why") {
+				t.Errorf("AdApiError fields: %+v", apiErr.Errors.AdApiErrors[0])
 			}
 		})
 	}
@@ -159,6 +149,19 @@ func TestBulkRESTNoTrackingIDAndBoundedBody(t *testing.T) {
 	apiErr, ok := err.(*APIError)
 	if !ok || apiErr.TrackingID != "" || strings.Contains(apiErr.Error(), "tracking ID") || !strings.HasSuffix(apiErr.Error(), strings.Repeat("x", 2048)) {
 		t.Fatalf("unexpected bounded error: %T %v", err, err)
+	}
+}
+
+func TestBulkRESTReadFailureKeepsStatus(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "100")
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = w.Write([]byte("short"))
+	}))
+	defer server.Close()
+	_, err := restTestService(server).GetBulkUploadStatus("id")
+	if err == nil || !strings.Contains(err.Error(), "GetBulkUploadStatus: HTTP 502: read response body") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
@@ -186,7 +189,7 @@ func TestBulkRESTDebugHidesToken(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	if strings.Contains(output, "secret-token") || strings.Contains(output, "Authorization") || !strings.Contains(output, "POST /Bulk/v13/BulkUploadUrl/Query: HTTP 200 (tracking ID tracking-header)") {
+	if strings.Contains(output, "secret-token") || strings.Contains(output, "Authorization") || strings.Contains(output, "upload.example") || !strings.Contains(output, "POST /Bulk/v13/BulkUploadUrl/Query: HTTP 200 (tracking ID tracking-header)") {
 		t.Fatalf("unsafe or missing debug output: %s", output)
 	}
 }
