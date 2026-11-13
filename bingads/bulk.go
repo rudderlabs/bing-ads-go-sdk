@@ -66,32 +66,33 @@ func (c *BulkService) transport() bulkTransport {
 }
 
 type GetBulkUploadUrlRequest struct {
-	XMLName      xml.Name `xml:"GetBulkUploadUrlRequest"`
-	NS           string   `xml:"xmlns,attr"`
-	AccountId    int64    `xml:"AccountId"`
-	ResponseMode string   `xml:"ResponseMode"`
+	XMLName      xml.Name `xml:"GetBulkUploadUrlRequest" json:"-"`
+	NS           string   `xml:"xmlns,attr" json:"-"`
+	AccountId    int64    `xml:"AccountId" json:"AccountId"`
+	ResponseMode string   `xml:"ResponseMode" json:"ResponseMode"`
 }
 
 type GetBulkUploadUrlResponse struct {
-	UploadUrl string `xml:"UploadUrl"`
-	RequestId string `xml:"RequestId"`
+	UploadUrl string `xml:"UploadUrl" json:"UploadUrl"`
+	RequestId string `xml:"RequestId" json:"RequestId"`
 }
 
 type GetBulkUploadStatusRequest struct {
-	XMLName   xml.Name `xml:"GetBulkUploadStatusRequest"`
-	NS        string   `xml:"xmlns,attr"`
-	RequestId string   `xml:"RequestId"`
+	XMLName   xml.Name `xml:"GetBulkUploadStatusRequest" json:"-"`
+	NS        string   `xml:"xmlns,attr" json:"-"`
+	RequestId string   `xml:"RequestId" json:"RequestId"`
 }
 
 type GetBulkUploadStatusResponse struct {
-	XMLName         xml.Name   `xml:"GetBulkUploadStatusResponse"`
-	NS              string     `xml:"xmlns,attr"`
-	PercentComplete int64      `xml:"PercentComplete"`
-	RequestStatus   string     `xml:"RequestStatus"`
-	ResultFileUrl   string     `xml:"ResultFileUrl"`
-	Errors          ErrorsType `xml:"ErrorsType"`
-	// ProcessingErrors holds the REST response's Errors: problems found while processing the uploaded file.
-	ProcessingErrors []OperationError `xml:"-"`
+	XMLName         xml.Name `xml:"GetBulkUploadStatusResponse" json:"-"`
+	NS              string   `xml:"xmlns,attr" json:"-"`
+	PercentComplete int64    `xml:"PercentComplete" json:"PercentComplete"`
+	RequestStatus   string   `xml:"RequestStatus" json:"RequestStatus"`
+	ResultFileUrl   string   `xml:"ResultFileUrl" json:"ResultFileUrl"`
+	// Errors is the SOAP fault detail; REST never sets it.
+	Errors ErrorsType `xml:"ErrorsType" json:"-"`
+	// ProcessingErrors is the REST response's Errors: problems found while processing the uploaded file.
+	ProcessingErrors []OperationError `xml:"-" json:"Errors"`
 }
 
 // GetBulkUploadUrl gets the URL and request ID for a bulk upload.

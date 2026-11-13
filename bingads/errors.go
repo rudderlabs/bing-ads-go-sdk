@@ -61,10 +61,10 @@ type AdApiError struct {
 }
 
 type OperationError struct {
-	Code      int64  `xml:"OperationError>Code"`
-	Details   string `xml:"OperationError>Details"`
-	ErrorCode string `xml:"OperationError>ErrorCode"`
-	Message   string `xml:"OperationError>Message"`
+	Code      int64  `xml:"OperationError>Code" json:"Code"`
+	Details   string `xml:"OperationError>Details" json:"Details"`
+	ErrorCode string `xml:"OperationError>ErrorCode" json:"ErrorCode"`
+	Message   string `xml:"OperationError>Message" json:"Message"`
 }
 
 type Fault struct {

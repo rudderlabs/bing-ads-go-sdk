@@ -14,27 +14,6 @@ type restBulkTransport struct {
 	baseURL string
 }
 
-type restGetBulkUploadURLRequest struct {
-	AccountID    int64  `json:"AccountId"`
-	ResponseMode string `json:"ResponseMode"`
-}
-
-type restGetBulkUploadURLResponse struct {
-	RequestID string `json:"RequestId"`
-	UploadURL string `json:"UploadUrl"`
-}
-
-type restGetBulkUploadStatusRequest struct {
-	RequestID string `json:"RequestId"`
-}
-
-type restGetBulkUploadStatusResponse struct {
-	Errors          []OperationError `json:"Errors"`
-	PercentComplete int64            `json:"PercentComplete"`
-	RequestStatus   string           `json:"RequestStatus"`
-	ResultFileURL   string           `json:"ResultFileUrl"`
-}
-
 // restAdAPIError is AdApiError in JSON, where the detail field is named Detail.
 type restAdAPIError struct {
 	Code      int64  `json:"Code"`
@@ -53,26 +32,21 @@ type restFault struct {
 }
 
 func (t *restBulkTransport) getBulkUploadURL(accountID int64, responseMode string) (*GetBulkUploadUrlResponse, error) {
-	var result restGetBulkUploadURLResponse
+	var result GetBulkUploadUrlResponse
 	if err := t.postJSON("GetBulkUploadUrl", "/Bulk/v13/BulkUploadUrl/Query",
-		restGetBulkUploadURLRequest{AccountID: accountID, ResponseMode: responseMode}, &result); err != nil {
+		GetBulkUploadUrlRequest{AccountId: accountID, ResponseMode: responseMode}, &result); err != nil {
 		return nil, err
 	}
-	return &GetBulkUploadUrlResponse{UploadUrl: result.UploadURL, RequestId: result.RequestID}, nil
+	return &result, nil
 }
 
 func (t *restBulkTransport) getBulkUploadStatus(requestID string) (*GetBulkUploadStatusResponse, error) {
-	var result restGetBulkUploadStatusResponse
+	var result GetBulkUploadStatusResponse
 	if err := t.postJSON("GetBulkUploadStatus", "/Bulk/v13/BulkUploadStatus/Query",
-		restGetBulkUploadStatusRequest{RequestID: requestID}, &result); err != nil {
+		GetBulkUploadStatusRequest{RequestId: requestID}, &result); err != nil {
 		return nil, err
 	}
-	return &GetBulkUploadStatusResponse{
-		RequestStatus:    result.RequestStatus,
-		PercentComplete:  result.PercentComplete,
-		ResultFileUrl:    result.ResultFileURL,
-		ProcessingErrors: result.Errors,
-	}, nil
+	return &result, nil
 }
 
 // postJSON sends payload to path and decodes a 2xx body into out. Other statuses return a fault error.
