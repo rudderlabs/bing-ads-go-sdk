@@ -73,9 +73,8 @@ func (b *Session) sendRequest(body interface{}, endpoint, soapAction, ns string)
 	}
 
 	if debug != "" {
-		fmt.Println(string(req))
+		fmt.Printf("bingads debug request: action=%s\n", soapAction)
 	}
-	// fmt.Println(string(raw))
 
 	res := SoapResponseEnvelope{}
 

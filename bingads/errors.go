@@ -2,8 +2,43 @@ package bingads
 
 import (
 	"encoding/xml"
+	"fmt"
 	"strings"
+	"unicode/utf8"
 )
+
+// maxBodyInError caps how much of an undecoded response body APIError.Error includes.
+const maxBodyInError = 2048
+
+// APIError describes a failed REST bulk API request.
+type APIError struct {
+	Operation  string
+	StatusCode int
+	TrackingID string
+	Errors     ErrorsType
+	Body       string
+}
+
+func (e *APIError) Error() string {
+	message := e.Errors.Error()
+	if strings.TrimSpace(message) == "" {
+		message = e.Body
+		if len(message) > maxBodyInError {
+			cut := maxBodyInError
+			for cut > 0 && !utf8.RuneStart(message[cut]) {
+				cut-- // don't split a multi-byte character
+			}
+			message = message[:cut]
+		}
+		if message == "" {
+			message = "empty response body"
+		}
+	}
+	if e.TrackingID != "" {
+		return fmt.Sprintf("%s: HTTP %d (tracking ID %s): %s", e.Operation, e.StatusCode, e.TrackingID, message)
+	}
+	return fmt.Sprintf("%s: HTTP %d: %s", e.Operation, e.StatusCode, message)
+}
 
 type baseError struct {
 	code    string
@@ -34,10 +69,10 @@ type AdApiError struct {
 }
 
 type OperationError struct {
-	Code      int64  `xml:"OperationError>Code"`
-	Details   string `xml:"OperationError>Details"`
-	ErrorCode string `xml:"OperationError>ErrorCode"`
-	Message   string `xml:"OperationError>Message"`
+	Code      int64  `xml:"OperationError>Code" json:"Code"`
+	Details   string `xml:"OperationError>Details" json:"Details"`
+	ErrorCode string `xml:"OperationError>ErrorCode" json:"ErrorCode"`
+	Message   string `xml:"OperationError>Message" json:"Message"`
 }
 
 type Fault struct {
