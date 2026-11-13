@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"golang.org/x/oauth2"
@@ -113,5 +114,39 @@ func TestBulkSOAPFault(t *testing.T) {
 	_, err := b.GetBulkUploadUrl()
 	if e, ok := err.(*baseError); !ok || e.Code() != "AuthenticationTokenExpired" {
 		t.Fatalf("expected AuthenticationTokenExpired baseError, got %T: %v", err, err)
+	}
+}
+
+func TestSOAPDebugLogOmitsSecrets(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><GetBulkUploadUrlResponse><UploadUrl>url</UploadUrl><RequestId>id</RequestId></GetBulkUploadUrlResponse></s:Body></s:Envelope>`))
+	}))
+	defer server.Close()
+	enableDebug(t)
+
+	sessions := map[string]*Session{
+		"oauth":    {AccountId: "123", DeveloperToken: "developer-secret", TokenSource: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "secret-token"}), HTTPClient: server.Client()},
+		"password": {AccountId: "123", Username: "user", Password: "password-secret", DeveloperToken: "developer-secret", HTTPClient: server.Client()},
+	}
+	for name, session := range sessions {
+		t.Run(name, func(t *testing.T) {
+			service := NewBulkService(session)
+			service.Endpoint = server.URL
+
+			output := captureStdout(t, func() {
+				if _, err := service.GetBulkUploadUrl(); err != nil {
+					t.Error(err)
+				}
+			})
+
+			if !strings.HasPrefix(output, "bingads debug request: action=GetBulkUploadUrl\n") {
+				t.Errorf("debug output = %q, want it to start with the action line", output)
+			}
+			for _, secret := range []string{"secret-token", "developer-secret", "password-secret"} {
+				if strings.Contains(output, secret) {
+					t.Errorf("debug output contains %q: %q", secret, output)
+				}
+			}
+		})
 	}
 }
