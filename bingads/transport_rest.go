@@ -115,7 +115,7 @@ func faultError(operation string, status int, trackingID string, raw []byte) err
 			codes = append(codes, e.ErrorCode)
 		}
 	case "ApiFaultDetail":
-		apiErr.Errors.OperationErrors = append(fault.OperationErrors, fault.BatchErrors...)
+		apiErr.Errors.OperationErrors = append(append([]OperationError(nil), fault.OperationErrors...), fault.BatchErrors...)
 		for _, e := range apiErr.Errors.OperationErrors {
 			codes = append(codes, e.ErrorCode)
 		}

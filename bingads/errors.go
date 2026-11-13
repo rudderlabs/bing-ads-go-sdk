@@ -4,7 +4,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 )
+
+// maxBodyInError caps how much of an undecoded response body APIError.Error includes.
+const maxBodyInError = 2048
 
 // APIError describes a failed REST bulk API request.
 type APIError struct {
@@ -19,8 +23,12 @@ func (e *APIError) Error() string {
 	message := e.Errors.Error()
 	if strings.TrimSpace(message) == "" {
 		message = e.Body
-		if len(message) > 2048 {
-			message = message[:2048]
+		if len(message) > maxBodyInError {
+			cut := maxBodyInError
+			for cut > 0 && !utf8.RuneStart(message[cut]) {
+				cut-- // don't split a multi-byte character
+			}
+			message = message[:cut]
 		}
 		if message == "" {
 			message = "empty response body"

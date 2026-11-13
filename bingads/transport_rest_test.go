@@ -256,6 +256,11 @@ func TestAPIErrorMessage(t *testing.T) {
 			err:  &APIError{Operation: "GetBulkUploadUrl", StatusCode: 503, Body: strings.Repeat("x", 3000)},
 			want: "GetBulkUploadUrl: HTTP 503: " + strings.Repeat("x", 2048),
 		},
+		{
+			name: "cut does not split a multi-byte character",
+			err:  &APIError{Operation: "GetBulkUploadUrl", StatusCode: 503, Body: strings.Repeat("x", 2047) + "é" + strings.Repeat("x", 10)},
+			want: "GetBulkUploadUrl: HTTP 503: " + strings.Repeat("x", 2047),
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
