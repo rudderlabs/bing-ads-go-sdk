@@ -13,6 +13,7 @@ import (
 	"strconv"
 )
 
+// Protocol selects the Bing Ads bulk API used for upload URL and status calls.
 type Protocol string
 
 const (
@@ -37,10 +38,12 @@ type BulkService struct {
 
 type BulkServiceOption func(*BulkService)
 
+// WithProtocol sets the protocol; the default is ProtocolSOAP. ProtocolREST needs Session.TokenSource (OAuth).
 func WithProtocol(p Protocol) BulkServiceOption {
 	return func(b *BulkService) { b.protocol = p }
 }
 
+// WithRESTBaseURL overrides the REST host, for example the sandbox or a test server.
 func WithRESTBaseURL(u string) BulkServiceOption {
 	return func(b *BulkService) { b.restBaseURL = u }
 }

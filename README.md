@@ -34,21 +34,6 @@
 
 \*\*Describe how to use the software.\*\*
 
-## Bulk upload protocol
-
-`NewBulkService(session)` continues to use SOAP by default. Opt in to the REST
-bulk upload URL and status endpoints with:
-
-```go
-service := bingads.NewBulkService(session, bingads.WithProtocol(bingads.ProtocolREST))
-url, err := service.GetBulkUploadUrl()
-// Use url.RequestId with service.GetBulkUploadStatus(url.RequestId).
-```
-
-REST requires `session.TokenSource` (OAuth); it does not support SOAP's
-username/password authentication. `UploadBulkFile` is unchanged. For tests,
-`bingads.WithRESTBaseURL(server.URL)` overrides the default REST base URL.
-
 ## Contribute
 
 We would love to see you contribute to RudderStack. Get more information on how to contribute [**here**](CONTRIBUTING.md).
